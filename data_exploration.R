@@ -80,7 +80,23 @@ df <- rbind(read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_04.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_05.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_06.csv'),
-           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_07.csv'))
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_07.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_08.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_09.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_10.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_11.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_12.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_13.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_14.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_15.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_16.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_17.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_18.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_19.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_20.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_21.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_22.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_23.csv'))
 
 df %>%
   select(-X, -idx) %>%
@@ -88,3 +104,16 @@ df %>%
 
 table(df$yr)
 hist(df$yr, breaks=50)
+
+table(df$git_hits)
+table(df$osf_hits)
+table(df$nda_hits)
+table(df$open_neuro)
+table(df$fmri)
+
+df %>%
+  filter(git_hits>0) %>%
+  group_by(yr) %>%
+  summarise(papes = n()) %>%
+  ggplot(aes(x=yr, y=papes)) + 
+  geom_bar(stat='identity')
