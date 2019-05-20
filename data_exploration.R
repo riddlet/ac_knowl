@@ -3,6 +3,7 @@ library(ggplot2)
 library(lubridate)
 library(reticulate)
 library(tidyr)
+library(stringr)
 
 use_virtualenv('/Users/riddleta/Desktop/misc_py3_env/')
 source_python('/Users/riddleta/Desktop/pickel_reader.py')
@@ -96,11 +97,20 @@ df <- rbind(read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_20.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_21.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_22.csv'),
-           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_23.csv'))
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_23.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_24.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_25.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_26.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_27.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_28.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_29.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_30.csv'))
 
 df %>%
   select(-X, -idx) %>%
-  distinct() -> df
+  distinct() %>%
+  mutate(yr = str_trim(yr)) %>%
+  mutate(yr = as.numeric(str_replace(yr, '2016;', '2016'))) -> df
 
 table(df$yr)
 hist(df$yr, breaks=50)
@@ -115,5 +125,5 @@ df %>%
   filter(git_hits>0) %>%
   group_by(yr) %>%
   summarise(papes = n()) %>%
-  ggplot(aes(x=yr, y=papes)) + 
+  ggplot(aes(x=as.character(yr), y=papes)) + 
   geom_bar(stat='identity')
