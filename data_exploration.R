@@ -75,6 +75,10 @@ year_div %>%
 
 # might be worthwhile to assess how many people are working in a field. this is a proxy for competition. maybe try to associate it with grant funding?
 
+file_list1 <- read.table('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/filelist.txt', sep='', header = T)
+file_list2 <- read.table('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/oa_comm_use_file_list.txt', sep='\t', skip = 1, fill = T)
+file_list3 <- read.table('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/oa_file_list.txt', sep='\t', skip = 1, fill = T)
+
 df <- rbind(read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_01.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_02.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_03.csv'),
@@ -104,7 +108,10 @@ df <- rbind(read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_27.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_28.csv'),
            read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_29.csv'),
-           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_30.csv'))
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_30.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_31.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_32.csv'),
+           read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/bionlp_33.csv'))
 
 df %>%
   select(-X, -idx) %>%
@@ -116,14 +123,32 @@ table(df$yr)
 hist(df$yr, breaks=50)
 
 table(df$git_hits)
+table(df$git_hits>0)
 table(df$osf_hits)
+table(df$osf_hits>0)
 table(df$nda_hits)
 table(df$open_neuro)
+table(df$open_neuro>0)
 table(df$fmri)
+
+table(df$yr>2008)
 
 df %>%
   filter(git_hits>0) %>%
   group_by(yr) %>%
   summarise(papes = n()) %>%
   ggplot(aes(x=as.character(yr), y=papes)) + 
-  geom_bar(stat='identity')
+  geom_bar(stat='identity') +
+  ylab('Papers mentioning github')
+
+df %>%
+  filter(yr>2008) %>%
+  mutate(open = factor(git_hits>0, labels=c('no_git', 'git'))) %>%
+  group_by(yr, open) %>%
+  summarise(papes = n()) %>%
+  ungroup() %>%
+  spread(open, papes) %>%
+  mutate(prop = git/(git+no_git)) %>%
+  ggplot(aes(x=as.character(yr), y=prop)) + 
+  geom_bar(stat='identity') +
+  ylab('Proportion of papers mentioning github')
