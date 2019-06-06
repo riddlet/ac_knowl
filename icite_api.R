@@ -93,5 +93,5 @@ get_metrics <- function(pmids){
 to_dataframe(icite_api('23456789'))
 content(resp)
 
-get_metrics(c('23456789', '23456789abc'))
+get_metrics(c('23456789', '26011165'))
 
