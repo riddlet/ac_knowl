@@ -3,3 +3,5 @@ data/
 output/
 .DS_Store
 *.swp
+api_key.txt
+.ipynb_checkpoints*
