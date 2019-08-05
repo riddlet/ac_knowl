@@ -5,3 +5,4 @@ output/
 *.swp
 api_key.txt
 .ipynb_checkpoints*
+._*
