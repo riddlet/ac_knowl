@@ -1,0 +1,408 @@
+---
+title: "Data sharing analysis"
+output: 
+  pdf_document:
+    keep_tex: true
+
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(dplyr)
+library(fuzzyjoin)
+library(lubridate)
+library(ggplot2)
+library(stringr)
+library(iCiteR) #installed the dev version
+library(knitr)
+library(tidyr)
+library(forcats)
+library(viridis)
+
+'%ni%' <- Negate('%in%')
+
+knitr::opts_chunk$set(warning = F, echo=F, message = F, cache = T)
+options(knitr.kable.NA = '', tinytex.verbose=TRUE)
+```
+
+```{r load-data, include=FALSE, eval=TRUE}
+df_full_texts <- read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/file_index.csv')
+
+#grant details
+proj <- list.files('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/RePORTER/Projects/', full.names = T)
+
+#publication details
+pubs <- list.files('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/RePORTER/Publications/', full.names = T)
+
+#pmid to pmcid link file obtained from https://www.ncbi.nlm.nih.gov/pmc/pmctopmid/
+pmc_ids <- read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/PMC-ids.csv')
+#pmid_pmcid_links <- list.files('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/pmid_pmcid_link/', full.names = T)
+
+#fulltext publication year
+bio_files <- list.files('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/', full.names = T, pattern = 'bio.')
+
+#context information for all repo search hits
+df_hit_contexts <- read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/hit_contexts.csv')
+
+# df_icite <- get_metrics(df_full_texts$pmid)
+# write.csv(df_icite, '/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/df_icite.csv', row.names = FALSE)
+# df_icite %>%
+#   filter(is.na(doi)) -> tempout
+# df_icite2 <- get_metrics(tempout$pmid)
+# df_icite %>%
+#   filter(!is.na(doi)) %>%
+#   rbind(df_icite2 %>% filter(!is.na(doi))) -> completed_calls
+# df_full_texts %>%
+#   select(pmid) %>%
+#   filter(pmid %ni% completed_calls$pmid) %>%
+#   filter(pmid!=0) -> remaining_papes
+# write.csv(completed_calls, '/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/df_icite_completed.csv', row.names = FALSE)
+# df_icite3 <- get_metrics(remaining_papes$pmid)
+# completed_calls %>%
+#   rbind(df_icite3) -> all_available_data
+# write.csv(all_available_data, '/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/df_icite.csv', row.names = FALSE)
+#icite_data <- read.csv('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/output/df_icite.csv')
+
+df_proj1 <- read.csv(proj[1])
+df_proj2 <- read.csv(proj[2])
+df_proj3 <- read.csv(proj[3])
+df_proj4 <- read.csv(proj[4])
+df_proj5 <- read.csv(proj[5])
+df_proj6 <- read.csv(proj[6])
+df_proj7 <- read.csv(proj[7])
+df_proj8 <- read.csv(proj[8])
+df_proj9 <- read.csv(proj[9])
+df_proj10 <- read.csv(proj[10])
+df_proj11 <- read.csv(proj[11])
+df_proj12 <- read.csv(proj[12])
+df_proj13 <- read.csv(proj[13])
+df_proj14 <- read.csv(proj[14])
+df_proj15 <- read.csv(proj[15])
+df_proj <- rbind(df_proj1, df_proj2, df_proj3, df_proj4, df_proj5, df_proj6, df_proj7, df_proj8,
+                 df_proj9, df_proj10, df_proj11, df_proj12, df_proj13, df_proj14, df_proj15)
+rm(df_proj1, df_proj2, df_proj3, df_proj4, df_proj5, df_proj6, df_proj7, df_proj8,
+   df_proj9, df_proj10, df_proj11, df_proj12, df_proj13, df_proj14, df_proj15)
+
+df_pubs1 <- read.csv(pubs[1])
+df_pubs2 <- read.csv(pubs[2])
+df_pubs3 <- read.csv(pubs[3])
+df_pubs4 <- read.csv(pubs[4])
+df_pubs5 <- read.csv(pubs[5])
+df_pubs6 <- read.csv(pubs[6])
+df_pubs7 <- read.csv(pubs[7])
+df_pubs8 <- read.csv(pubs[8])
+df_pubs9 <- read.csv(pubs[9])
+df_pubs10 <- read.csv(pubs[10])
+df_pubs11 <- read.csv(pubs[11])
+df_pubs12 <- read.csv(pubs[12])
+df_pubs13 <- read.csv(pubs[13])
+df_pubs14 <- read.csv(pubs[14])
+df_pubs15 <- read.csv(pubs[15])
+df_pubs <- rbind(df_pubs1, df_pubs2, df_pubs3, df_pubs4, df_pubs5, df_pubs6, df_pubs7, df_pubs8,
+                 df_pubs9, df_pubs10, df_pubs11, df_pubs12, df_pubs13, df_pubs14, df_pubs15)
+rm(df_pubs1, df_pubs2, df_pubs3, df_pubs4, df_pubs5, df_pubs6, df_pubs7, df_pubs8,
+   df_pubs9, df_pubs10, df_pubs11, df_pubs12, df_pubs13, df_pubs14, df_pubs15)
+
+links <- list.files('/Users/riddleta/Desktop/promethium/home/riddleta/ac_knowl/data/RePORTER/Link_tables/', full.names = T)
+df_links <- do.call(rbind, lapply(links, fread))
+
+df_biofiles <- do.call(rbind, lapply(bio_files, fread))
+```
+
+This document will detail ongoing efforts to quantify the datasharing ecosystem in biomedical science, and to understand how datasharing impacts the impact and productivity of a scientific team.
+
+To do this work, we pulled full-text papers from pubmedcentral (PMC) using an NIH-maintained [api](https://www.ncbi.nlm.nih.gov/pmc/tools/developers/) and grant details from [FederalExporter](https://federalreporter.nih.gov/FileDownload). Although PMC has data going back to the 18th century, and Federal Exporter back to 2004, our analysis is focused on 2009 onwards, as data sharing did not become widely practiced until the late 00's. We selected 2009 as a start point because Github, one of the most popular repositories was founded the year prior.
+
+Table \@ref(tab:papes-and-projs) below shows a count of papers and funded projects by year, along with totals across all years. Note that the funded projects include grants made through many agencies that fund work that do not necessarily lead to scientific publications. Additionally, the publication year for articles is based on when they were *posted* to PMC, which is not necessaerily the same thing as the date that it is published by the journal. Occasionally, articles are published in PMC before the journal, but more frequently, they are published in PMC after a dealay
+
+```{r process-data}
+
+#df_pmid_pmcid <- do.call(rbind, lapply(pmid_pmcid_links, fread))
+pmc_ids %>%
+  mutate(pmcid = str_sub(PMCID, 4),
+         journal_year = Year) %>%
+  select(-ISSN, -eISSN, -Year) -> pmc_ids
+
+df_biofiles %>% #ONLINE pub date (df_pub has journal pub ate)
+  mutate(pubmed_year = str_trim(yr)) %>%
+  mutate(pubmed_year = str_replace(pubmed_year, ';', '')) %>%
+  mutate(pmcid = str_sub(df_biofiles$pmcid, 4)) %>%
+  select(-yr) -> df_biofiles
+
+df_full_texts %>%
+  left_join(pmc_ids) %>%
+  left_join(df_biofiles) %>%
+  select(-git_hits:-res) -> df_full_texts
+
+df_full_texts %>%
+  distinct() -> distinct_papes
+
+distinct_papes %>%
+  filter(!is.na(pubmed_year)) %>%
+  filter(pubmed_year!=2020) %>%
+  group_by(pubmed_year) %>%
+  summarise(n_papers = n()) -> papes_by_yr
+rbind(papes_by_yr, data.frame(pubmed_year='**Total**', n_papers=dim(distinct_papes)[1])) %>%
+  mutate(year = pubmed_year,
+        `# Full Text Papers` = n_papers) %>%
+  select(year, `# Full Text Papers`) -> papes_by_yr
+
+df_proj %>%
+  group_by(FY) %>%
+  summarise(n_proj = n()) -> projects_by_yr
+
+rbind(projects_by_yr, data.frame(FY=c('2019', '**Total**'), n_proj=c(NA, dim(df_proj)[1]))) %>%
+  mutate(year = FY,
+         `# Funded Projects` = n_proj) %>%
+  select(year, `# Funded Projects`) -> proj_by_yr
+
+distinct_papes %>%
+  group_by(Journal.Title) %>%
+  summarise(n_papers = n()) %>%
+  arrange(desc(n_papers)) %>%
+  slice(1:10) -> top_journals
+
+df_proj %>%
+  filter(IC_CENTER!='') %>%
+  group_by(IC_CENTER) %>%
+  summarise(n_projects = n()) %>%
+  arrange(desc(n_projects)) %>%
+  slice(1:10) -> top_centers
+```
+
+
+```{r papes-and-projs, results='asis'}
+
+kable(papes_by_yr %>% left_join(proj_by_yr),
+      caption='Number of papers and projects by year')
+
+```
+
+In table \@ref(tab:n-projs), we highlight the journals that appear most often in this database, along with the IC Centers that have the largest number of projects.
+
+```{r n-projs, results='asis'}
+kable(cbind(top_journals, top_centers),
+      caption='Number of projects and papers by journal and center')
+```
+
+Figure \ref{fig:date-mat} highlights the date disparity between publication date on PMC and journal publication date. Cells that are in white have no observations in them. There are a handful of papers that were published before 2000 but first appeared in PMC in 2009 (indeed, the earliest such paper has a publication date of 1948.)
+
+```{r date-mat, fig.cap='Year of journal publication versus pubmed central publication. Cells that are white have no observations.'}
+date_mat <- as.matrix(table(pmc_year = df_full_texts$pubmed_year, pub_year = df_full_texts$journal_year))
+
+data.frame(date_mat) %>%
+  mutate(pub_year = as.numeric(as.character(pub_year))) %>%
+  filter(pub_year>1999) %>%
+  filter(Freq==0) -> white_fills
+
+data.frame(date_mat) %>%
+  mutate(pub_year = as.numeric(as.character(pub_year))) %>%
+  filter(pub_year>1999) %>%
+  mutate(fill_with_white = Freq==0) %>%
+  ggplot(aes(x=pmc_year, y=pub_year, fill=log(Freq))) + 
+  geom_tile() +
+  scale_fill_viridis(option = 'E') +
+  geom_tile(data=white_fills, fill='white') + 
+  theme_classic() +
+  ylab('Journal Publication Year') +
+  xlab('PMC Publication Year')
+```
+
+Because these datasets are so heterogeneous, we decided to limit our analysis to make the work more manageable. We restricted our analysis to only those projects funded by the NIMH. This also gets around issues of data sharing in other fields where working on shared datasets is the norm (e.g. genomics), and thus may inappropriately bias our analyses and conclusions.
+
+```{r limit-data}
+df_proj %>% 
+  filter(IC_CENTER=='NIMH') %>% 
+  mutate(PROJECT_NUMBER = as.character(PROJECT_NUMBER)) -> nimh_proj
+
+##### clean up the project numbers #####
+nimh_proj %>% 
+  mutate(proj_num_len_pre = nchar(PROJECT_NUMBER)) %>%
+  mutate(PROJECT_NUMBER = stringr::str_remove(PROJECT_NUMBER, '\\s?\\([0-9]+\\)')) %>%
+  mutate(PROJECT_NUMBER = stringr::str_remove(PROJECT_NUMBER, '-.+')) %>%
+  mutate(PROJECT_NUMBER = stringr::str_remove(PROJECT_NUMBER, '^[0-9]')) %>%
+  mutate(proj_num_len_post = nchar(PROJECT_NUMBER)) -> nimh_proj
+
+nimh_proj %>% 
+  mutate(PROJECT_NUMBER = stringr::str_remove(PROJECT_NUMBER, '\\s?\\([0-9]+\\)')) %>%
+  mutate(PROJECT_NUMBER = stringr::str_remove(PROJECT_NUMBER, '-.+')) %>%
+  mutate(PROJECT_NUMBER = stringr::str_remove(PROJECT_NUMBER, '^[0-9]')) %>%
+  mutate(nas = rowSums(is.na(.))) %>%
+  group_by(PROJECT_NUMBER) %>%
+  filter(nas == max(nas, na.rm=T)) %>%
+  filter(FY == max(FY, na.rm=T)) %>%
+  ungroup() %>%
+  select(PROJECT_ID, PROJECT_TERMS, PROJECT_TITLE, DEPARTMENT, 
+         AGENCY, PROJECT_NUMBER, PROJECT_START_DATE, PROJECT_END_DATE) -> unique_grants
+```
+
+In total, this database lists the NIMH as having funded `r dim(nimh_proj)[1]` projects from 2004 onwards. However, this number is somewhat inflated, as many of these grants are actually renewals of previously existing awards. Removing these and other types of duplicates depresses the number of grants to `r dim(unique_grants)`.
+
+```{r}
+unique_grants %>%
+  mutate(PROJECT_START_DATE = mdy(as.character(PROJECT_START_DATE)),
+         PROJECT_END_DATE = mdy(as.character(PROJECT_END_DATE))) %>%
+  right_join(df_links) %>%
+  filter(!is.na(PROJECT_TERMS)) -> nimh_papers
+
+nimh_papers %>%
+  summarise(unique_papes = n_distinct(PMID)) -> distinct_papers
+
+
+```
+
+The federal reporter also has a table linking these grants to specific papers. I believe this linking is self-reported data by the PI's on the grant and is done during the grant's annual report. Using this linking table and we find that there are `r distinct_papers$unique_papers[1]` papers that have been funded by these NIMH grants.
+
+```{r link-to-fulltext}
+nimh_papers %>%
+  select(PMID) %>%
+  distinct() %>%
+  left_join(df_full_texts) -> papes_w_yrs 
+
+papes_w_yrs %>% 
+  filter(pubmed_year>2008) %>%
+  summarise(post_2008 = n()) -> modern_papes
+
+nimh_papers %>%
+  select(PMID) %>%
+  distinct() %>%
+  left_join(df_full_texts) %>%
+  filter(!is.na(file)) -> nimh_papers
+```
+
+The next stage of this analysis is to identify which of these papers contain links to shared data repositories. To do so, we must link these papers to the full-text database. However, not all papers that have information deposited in PubMed will have a corresponding full-text entry in PubMed Central. Of the `r distinct_papers$unique_papes[1]` papers identified as being linked to NIMH grants in FederalRePORTER, we found full-text matches for `r dim(nimh_papers)[1]` in the PubMed Central full-text database. Table \@ref(tab:nimh-journals) show the most 10 most frequently occurring journals in this subset of the data:
+
+```{r nimh-journals, results='asis'}
+nimh_papers %>%
+  group_by(Journal.Title) %>%
+  summarise(n_papers = n()) %>%
+  arrange(desc(n_papers)) %>%
+  slice(1:10) %>%
+  kable(.,
+        caption='Number of papers with full-text PMC content funded by the NIMH by journal')
+```
+
+At this stage, we can move on to documenting the presence or absence of data sharing in these papers. As a first step, we a set of simple regular expressions to look for the presence of references to many of the most common data-sharing platforms:
+
+- Github
+- OSF
+- NDAR
+- Open Neuro
+- Allen Institute
+- HCP
+- Balsa
+- LONI
+- FMRIDC
+- CCRNS
+- Datalad
+- Dataverse
+- DBgap
+- Dryad
+- Figshare
+- INDI
+- NITRC
+- Omega
+- Xnat
+- Zenodo
+- AWS Data
+
+It is important to emphasize that this process is error-prone. A simple text search will not be able to identify many cases where a paper makes a reference to a database but is not sharing data. Additionally, some of these platforms host more than just data. Github, for instance, hosts an extremely heterogeneous collection of digital information, and the OSF, while a bit more circumscribed than Github, also may contain analysis code, experimental materials, extra written documents or other types of information. However, it is worth examining these simple searches to set our expectations. If a papers does not have the string 'github' anywhere in it, then it is unlikely that the data has been shared. Even if authors post the data through another means (e.g. a link to a github repo on their personal website), if that link is not contained in the paper, the majority of readers will never know of its existence. 
+
+```{r repo-string-hits}
+df_hit_contexts %>%
+  mutate(repo_hit = str_trim(repo_hit)) %>%
+  mutate(repo_hit = fct_collapse(repo_hit, 
+                                 LONI = c('ida.loni.usc.edu','loni.usc.edu'),
+                                 dbgap = c('nih.gov/gap', 'dbgap'))) %>%
+  group_by(pmcid, repo_hit) %>%
+  summarise(n_hits = n()) %>%
+  ungroup() %>%
+  spread(repo_hit, n_hits) %>%
+  mutate(pmcid = as.character(pmcid)) %>%
+  right_join(nimh_papers) %>%
+  mutate_at(vars(balsa.wustl.edu:zenodo), replace_na, 0) %>%
+  mutate(any_repos_mentioned = rowSums(select(.,balsa.wustl.edu:zenodo))) -> papes_with_hits
+
+```
+
+Of the `r dim(papes_with_hits)[1]` papers funded by the NIMH which have full-text entries in PubMed Central, there are `r table(papes_with_hits$any_repos_mentioned>0)[2]` papers which contain a search string for one of the repos highlighted above. Figure \@ref{fig:repos-over-time} shows how the overall proportion of papers with references to a repository has grown over time, from a low of less than 1% in 2008 to a high of 14% in 2018 (the percentage for 2019 is 18.8, but as of now this only includes 16 papers). By this measure, data sharing is on the rise.
+
+```{r repos-over-time, fig.cap='Proportion of all NIMH funded full-text publications that resulted in a hit from a regular-expression search for a set of data repositories. Point size reflects the number of papers that were searched in a given year'}
+
+papes_with_hits %>%
+  group_by(journal_year) %>%
+  summarise(total_papers = n(),
+            repo_hits = sum(any_repos_mentioned>0)) %>%
+  mutate(prop_with_hits = repo_hits/total_papers) %>%
+  filter(journal_year>2007) %>%
+  filter(journal_year<2019) %>%
+  ggplot(aes(x=journal_year, y=prop_with_hits)) +
+  geom_line() +
+  theme_classic() +
+  xlab('Journal Publication Date') +
+  ylab('Proportion of publications with\na reference to a repository') +
+  geom_point(aes(size=total_papers), alpha=.5) +
+  scale_x_continuous(breaks=c(2008, 2010, 2012, 2014, 2016, 2018))
+  
+
+```
+
+We can also examine the relative popularity of each of these repositories. Figure \@ref{fig:relative-repo-popularity} decomposes the share of repository use into each repository, showing only those repositories whose usage make up at least .75% on at least one year. 
+
+```{r relative-repo-popularity, fig.cap='Proportion of all NIMH funded full-text publications that resulted in a hit from a regular-expression search for a set of data repositories. Each line represents a different repository. Only repositories who have at least .75% of papers with a hit on at least one year are shown.'}
+
+papes_with_hits %>%
+  select(pmcid:zenodo, journal_year) %>%
+  gather('repo', 'hits', balsa.wustl.edu:zenodo) %>%
+  filter(journal_year<2019) %>%
+  filter(journal_year>2007) %>%
+  group_by(journal_year, repo) %>%
+    summarise(total_papers = n(),
+            repo_hits = sum(hits>0)) %>%
+  mutate(prop_with_hits = repo_hits/total_papers) %>%
+  ungroup() %>%
+  group_by(repo) %>%
+  mutate(max_share = max(prop_with_hits)) %>%
+  filter(max_share>.0075) %>%
+  ggplot(aes(x=journal_year, y=prop_with_hits, group=repo, color=repo, linetype=repo)) +
+  geom_line(size=1) +
+  theme_classic() +
+  xlab('Journal Publication Date') +
+  ylab('Proportion of publications with\na reference to a repository') +
+  scale_color_viridis(option = 'E', discrete = T) +
+  scale_x_continuous(breaks=c(2008, 2010, 2012, 2014, 2016, 2018))
+
+```
+
+Not surprisingly, Github is far and away the leader of the pack, peaking with nearly 9% of publications making a reference to github in 2018. We can alsdo examine which journals have the largest proportion of papers with a reference to a repository. Figure \@ref{fig:journals-who-share} shows the proportion of papers with references to one of the repositories. 
+
+```{r journals-who-share, fig.cap = 'Proportion of publications with a reference to at least one data repository, by journal. Only publications with proportions greater than 10% are shown'}
+
+papes_with_hits %>%
+  select(pmcid:zenodo, Journal.Title) %>%
+  gather('repo', 'hits', balsa.wustl.edu:zenodo) %>%
+  group_by(Journal.Title) %>%
+    summarise(total_papers = n_distinct(pmcid),
+            repo_hits = sum(hits>0)) %>%
+  mutate(prop_with_hits = repo_hits/total_papers) %>%
+  ungroup() %>%
+  group_by(Journal.Title) %>%
+  mutate(max_share = max(prop_with_hits)) %>%
+  filter(total_papers>50) %>% 
+  filter(max_share>.1) %>%
+  ungroup() %>%
+  mutate(Journal.Title = fct_reorder(Journal.Title, prop_with_hits)) %>%
+  ggplot(aes(x=Journal.Title, y=prop_with_hits)) + 
+  geom_point() +
+  coord_flip() +
+  ylab('Proportion of publications with\na reference to a repository') +
+  xlab('') + 
+  theme_classic()
+
+```
+
+
+Figure \@ref{fig:journals-who-share} shows that journals with a heavy emphasis on genetics (eg. *Nature Genetics*, *Genome Biology*, *BMC Genomics*, *Genetic Epidemiology*), methods (eg *Nature Methods*, *PLoS Computational Biology*), or open-access philosophy (*eLife*, *PLoS Computational Biology*, *PLoS Biology*, *eNeuro*) feature prominently in the upper ranks of this distribution.
+
+The next stages of this analysis is to more accurately measure when data is posted to a repository. As of now, I think that the best way to accomplish this is to label a subset of the papers and train a classifier on this hand-labeled data. 
+
