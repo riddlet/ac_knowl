@@ -1,6 +1,13 @@
 ac_knowl/
 data/
 output/
+libs/
+written_docs/analysis_report_cache/*
+written_docs/analysis_report_files/*
+written_docs/*.html
+written_docs/*.log
+written_docs/*.pdf
+written_docs/*.tex
 .DS_Store
 *.swp
 api_key.txt
