@@ -13,3 +13,4 @@ written_docs/*.tex
 api_key.txt
 .ipynb_checkpoints*
 ._*
+*.html
