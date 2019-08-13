@@ -260,6 +260,8 @@ nimh_papers %>%
   distinct() %>%
   left_join(df_full_texts) %>%
   filter(!is.na(file)) -> nimh_papers
+
+write.csv(nimh_papers, '/Users/riddleta/Desktop/ac_knowl/output/nimh_papers.csv', row.names = FALSE)
 ```
 
 The next stage of this analysis is to identify which of these papers contain links to shared data repositories. To do so, we must link these papers to the full-text database. However, not all papers that have information deposited in PubMed will have a corresponding full-text entry in PubMed Central. Of the `r distinct_papers$unique_papes[1]` papers identified as being linked to NIMH grants in FederalRePORTER, we found full-text matches for `r dim(nimh_papers)[1]` in the PubMed Central full-text database. Table \@ref(tab:nimh-journals) shows the 10 most frequently occurring journals in this subset of the data. For comparison, we also show the 10 most frequently occurring journals among a wider spectrum of NIMH funded papers: any of the `r distinct_papers$unique_papes[1]` papers whose publication information we were able to find. This was a total of `r table(is.na(nimh_paper_pub_details$Journal.Title))[1]` papers.
